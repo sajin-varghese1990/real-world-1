@@ -134,6 +134,12 @@ App only (cluster stays):
 ./scripts/app-down.sh
 ```
 
+Shop images on minikube nodes **and** Docker Desktop (cluster stays; does not remove `postgres:16-alpine` unless `IMAGES_DOWN_POSTGRES=1`):
+
+```bash
+./scripts/images-down.sh
+```
+
 Entire `localk8s` profile:
 
 ```bash
