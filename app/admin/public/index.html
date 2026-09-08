@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Shop admin — Kubernetes lab</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #ecf4f3;
+        --ink: #1c1917;
+        --muted: #57534e;
+        --card: #fff;
+        --accent: #1d4ed8;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        background: radial-gradient(circle at top, #fff 0%, var(--bg) 55%);
+        color: var(--ink);
+        min-height: 100vh;
+      }
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 4rem 1.5rem;
+      }
+      h1 {
+        font-size: 2.4rem;
+        margin: 0 0 0.4rem;
+      }
+      p.lede {
+        color: var(--muted);
+        font-size: 1.15rem;
+      }
+      a {
+        color: var(--accent);
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid #d6e4e2;
+        border-radius: 12px;
+        padding: 1.25rem 1.4rem;
+      }
+      dl {
+        display: grid;
+        grid-template-columns: 8rem 1fr;
+        gap: 0.4rem 1rem;
+        margin: 0;
+      }
+      dt {
+        color: var(--muted);
+      }
+      dd {
+        margin: 0;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+      .status {
+        display: inline-block;
+        margin-top: 1rem;
+        color: var(--accent);
+        font-weight: 600;
+      }
+      label {
+        display: block;
+        margin: 0.6rem 0 0.25rem;
+        color: var(--muted);
+      }
+      input,
+      button {
+        font: inherit;
+      }
+      input {
+        width: 100%;
+        padding: 0.45rem 0.5rem;
+        border: 1px solid #d6e4e2;
+        border-radius: 6px;
+      }
+      button {
+        margin-top: 0.9rem;
+        background: var(--accent);
+        color: #fff;
+        border: 0;
+        border-radius: 6px;
+        padding: 0.5rem 0.9rem;
+        cursor: pointer;
+      }
+      ul {
+        padding-left: 1.2rem;
+      }
+      .error {
+        color: #b91c1c;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Shop admin</h1>
+      <p class="lede">
+        Add catalog items. They are written to Postgres in namespace
+        <code>shop-db</code> (DNS
+        <code>postgres.shop-db.svc.cluster.local</code>).
+        <a href="/">View shop</a>
+      </p>
+      <section class="card">
+        <h2>New item</h2>
+        <form id="item-form">
+          <label for="name">Name</label>
+          <input id="name" name="name" required maxlength="80" />
+          <label for="note">Note</label>
+          <input id="note" name="note" maxlength="200" />
+          <button type="submit">Save to database</button>
+        </form>
+        <p id="form-status" class="status"></p>
+      </section>
+      <section class="card" style="margin-top: 1.25rem">
+        <h2>Items in DB</h2>
+        <p id="list-status" class="status">Loading…</p>
+        <ul id="items"></ul>
+      </section>
+      <section class="card" style="margin-top: 1.25rem">
+        <h2>Serving pod</h2>
+        <p id="status" class="status">Loading /admin/api/info…</p>
+        <dl id="info" hidden></dl>
+      </section>
+    </main>
+    <script>
+      async function loadInfo() {
+        const status = document.getElementById("status");
+        const info = document.getElementById("info");
+        try {
+          const res = await fetch("/admin/api/info");
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const data = await res.json();
+          info.innerHTML = Object.entries(data)
+            .map(
+              ([key, value]) =>
+                "<dt>" +
+                key +
+                "</dt><dd>" +
+                String(value) +
+                "</dd>"
+            )
+            .join("");
+          info.hidden = false;
+          status.textContent = "Healthy — admin app";
+        } catch (err) {
+          status.classList.add("error");
+          status.textContent = "Could not load /admin/api/info: " + err.message;
+        }
+      }
+      loadInfo();
+      async function loadItems() {
+        const status = document.getElementById("list-status");
+        const list = document.getElementById("items");
+        try {
+          const res = await fetch("/admin/api/items");
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const data = await res.json();
+          list.innerHTML = data.items
+            .map(
+              (item) =>
+                "<li><strong>" +
+                item.name +
+                "</strong> — " +
+                (item.note || "no note") +
+                "</li>"
+            )
+            .join("");
+          status.textContent = data.items.length
+            ? data.items.length + " item(s)"
+            : "Empty — add the first item above.";
+        } catch (err) {
+          status.classList.add("error");
+          status.textContent = "Could not list items: " + err.message;
+        }
+      }
+      document.getElementById("item-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const formStatus = document.getElementById("form-status");
+        const name = document.getElementById("name").value.trim();
+        const note = document.getElementById("note").value.trim();
+        formStatus.classList.remove("error");
+        try {
+          const res = await fetch("/admin/api/items", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, note }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "HTTP " + res.status);
+          formStatus.textContent = "Saved id " + data.item.id;
+          document.getElementById("item-form").reset();
+          await loadItems();
+        } catch (err) {
+          formStatus.classList.add("error");
+          formStatus.textContent = err.message;
+        }
+      });
+      loadItems();
+    </script>
+  </body>
+</html>

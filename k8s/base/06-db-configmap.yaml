@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-config
+  namespace: shop
+  labels:
+    app.kubernetes.io/part-of: shop
+data:
+  PGHOST: postgres.shop-db.svc.cluster.local
+  PGPORT: "5432"
+  PGUSER: shop
+  PGDATABASE: shop

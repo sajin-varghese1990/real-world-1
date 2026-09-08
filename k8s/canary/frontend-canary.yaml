@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-canary
+  namespace: shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend-canary
+  template:
+    metadata:
+      labels:
+        app: frontend-canary
+    spec:
+      containers:
+        - name: frontend
+          image: shop-frontend:1.2
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          # same PORT, envFrom, probes as stable frontend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-canary
+  namespace: shop
+spec:
+  selector:
+    app: frontend-canary
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

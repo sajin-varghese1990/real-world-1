@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Neighborhood Shop</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f3ec;
+        --ink: #1c1917;
+        --muted: #57534e;
+        --card: #fffcf7;
+        --accent: #0f766e;
+        --line: #e7e0d4;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: "Palatino Linotype", Palatino, Georgia, serif;
+        background: var(--bg);
+        color: var(--ink);
+        min-height: 100vh;
+      }
+      header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 1rem;
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 1.5rem 1.5rem 0;
+      }
+      header a {
+        color: var(--accent);
+        text-decoration: none;
+        font-size: 0.95rem;
+      }
+      header a:hover {
+        text-decoration: underline;
+      }
+      main {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem 4rem;
+      }
+      h1 {
+        font-size: 2.5rem;
+        font-weight: 500;
+        margin: 0;
+      }
+      .lede {
+        color: var(--muted);
+        font-size: 1.15rem;
+        max-width: 36rem;
+      }
+      #catalog-status {
+        color: var(--muted);
+      }
+      #catalog-status.error {
+        color: #b91c1c;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 1rem;
+        margin-top: 1.5rem;
+      }
+      article {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 1.15rem 1.2rem 1.3rem;
+      }
+      article h2 {
+        font-size: 1.2rem;
+        margin: 0 0 0.35rem;
+        font-weight: 600;
+      }
+      article p {
+        margin: 0;
+        color: var(--muted);
+      }
+      .empty {
+        margin-top: 1.5rem;
+        padding: 2rem;
+        border: 1px dashed var(--line);
+        border-radius: 14px;
+        color: var(--muted);
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Neighborhood Shop</h1>
+      <a href="/admin/">Staff</a>
+    </header>
+    <main>
+      <p class="lede">
+        Fresh picks from around the corner. What you see here is what we have
+        in stock today.
+      </p>
+      <p id="catalog-status">Loading the catalog…</p>
+      <div id="catalog" class="grid" hidden></div>
+      <p id="empty" class="empty" hidden>
+        Nothing on the shelf yet. Check back shortly.
+      </p>
+    </main>
+    <script>
+      async function loadCatalog() {
+        const status = document.getElementById("catalog-status");
+        const grid = document.getElementById("catalog");
+        const empty = document.getElementById("empty");
+        try {
+          const res = await fetch("/api/items");
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const data = await res.json();
+          if (!data.items.length) {
+            status.hidden = true;
+            empty.hidden = false;
+            return;
+          }
+          grid.hidden = false;
+          grid.innerHTML = data.items
+            .map(function (item) {
+              const note = item.note ? item.note : "Available now";
+              return (
+                "<article><h2>" +
+                item.name +
+                "</h2><p>" +
+                note +
+                "</p></article>"
+              );
+            })
+            .join("");
+          status.textContent =
+            data.items.length === 1
+              ? "1 item in stock"
+              : data.items.length + " items in stock";
+        } catch (err) {
+          status.classList.add("error");
+          status.textContent = "We could not load the catalog. Try again.";
+        }
+      }
+      loadCatalog();
+    </script>
+  </body>
+</html>
