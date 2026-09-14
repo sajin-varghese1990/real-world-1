@@ -1,0 +1,16 @@
+# Cross-namespace alias: Ingress in shop can only name Services in shop.
+# Real backend is web-svc in default.
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-svc
+  namespace: shop
+  labels:
+    app.kubernetes.io/part-of: shop
+spec:
+  type: ExternalName
+  externalName: web-svc.default.svc.cluster.local
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
