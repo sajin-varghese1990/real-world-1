@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: ghcr.io/sajin-varghese1990/shop-frontend:pending-first-build
+          image: ghcr.io/sajin-varghese1990/shop-frontend:bac25873950825dbec6338f1288ab67985ceb2b4
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
