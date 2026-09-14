@@ -47,11 +47,16 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      # ubuntu-latest runners are amd64; minikube's Docker driver runs arm64
+      # on Apple Silicon. QEMU + platforms: cross-builds both into one manifest
+      # list so kubelet can pull the right one either way.
+      - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
         with:
           context: app/frontend
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: ghcr.io/${{ env.IMAGE_OWNER }}/shop-frontend:${{ github.sha }}
 
   build-admin:
@@ -65,11 +70,13 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
         with:
           context: app/admin
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: ghcr.io/${{ env.IMAGE_OWNER }}/shop-admin:${{ github.sha }}
 
   # if: always() opts out of the default `if: success()`, which would skip
