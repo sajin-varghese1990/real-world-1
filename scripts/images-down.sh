@@ -30,8 +30,10 @@ for img in \
   shop-frontend:1.0 \
   shop-frontend:1.1 \
   shop-frontend:1.2 \
+  shop-frontend:1.3 \
   shop-admin:1.0 \
-  shop-admin:1.1
+  shop-admin:1.1 \
+  shop-admin:1.3
 do
   remove_one "${img}"
 done

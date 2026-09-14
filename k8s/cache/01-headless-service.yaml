@@ -1,0 +1,19 @@
+# Headless: no ClusterIP. DNS returns A records for every Ready Redis pod.
+# Clients (shop frontend/admin) resolve this name and talk to each replica.
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: shop-cache
+  labels:
+    app: redis
+    tier: cache
+spec:
+  clusterIP: None
+  selector:
+    app: redis
+    tier: cache
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: redis

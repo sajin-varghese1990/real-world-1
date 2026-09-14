@@ -7,7 +7,9 @@ source "${SCRIPT_DIR}/env.sh"
 
 kubectl config use-context "${K8S_CONTEXT}"
 kubectl delete -f "${K8S_DIR}" --ignore-not-found
+kubectl delete -f "${CACHE_DIR}" --ignore-not-found
+kubectl delete namespace "${CACHE_NAMESPACE}" --ignore-not-found
 kubectl delete -f "${DB_DIR}" --ignore-not-found
 kubectl delete pvc --all -n "${DB_NAMESPACE}" --ignore-not-found
 kubectl delete namespace "${DB_NAMESPACE}" --ignore-not-found
-echo "Shop apps and database removed. Recreate with ./scripts/app-up.sh"
+echo "Shop apps, cache, and database removed. Recreate with ./scripts/app-up.sh"

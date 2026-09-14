@@ -2,6 +2,12 @@ const express = require("express");
 const os = require("os");
 const path = require("path");
 const { ensureSchema, listItems, createItem } = require("./db");
+const {
+  getCachedItems,
+  setCachedItems,
+  invalidateItemsCache,
+  peerIps,
+} = require("./cache");
 
 const app = express();
 const port = Number(process.env.PORT) || 8080;
@@ -15,7 +21,8 @@ app.get(`${basePath}/health`, (_req, res) => {
   res.json({ status: "ok", app: "admin" });
 });
 
-app.get(`${basePath}/api/info`, (_req, res) => {
+app.get(`${basePath}/api/info`, async (_req, res) => {
+  const redisPeers = await peerIps();
   res.json({
     app: "admin",
     hostname: os.hostname(),
@@ -23,16 +30,24 @@ app.get(`${basePath}/api/info`, (_req, res) => {
     nodeName: process.env.NODE_NAME || "unknown",
     namespace: process.env.POD_NAMESPACE || "unknown",
     pgHost: process.env.PGHOST || "unset",
+    redisHeadless: process.env.REDIS_HEADLESS_HOST || "unset",
+    redisPeers,
     tier: "admin",
-    phase: 3,
+    phase: 4,
     basePath,
   });
 });
 
 app.get(`${basePath}/api/items`, async (_req, res) => {
   try {
+    const cached = await getCachedItems();
+    if (cached.items) {
+      res.json({ items: cached.items, source: cached.source, redisPeers: cached.redisPeers });
+      return;
+    }
     const items = await listItems();
-    res.json({ items });
+    const redisPeers = await setCachedItems(items);
+    res.json({ items, source: "database", redisPeers });
   } catch (err) {
     console.error(err);
     res.status(503).json({ error: "database unavailable" });
@@ -48,7 +63,8 @@ app.post(`${basePath}/api/items`, async (req, res) => {
   }
   try {
     const item = await createItem(name, note);
-    res.status(201).json({ item });
+    const redisPeers = await invalidateItemsCache();
+    res.status(201).json({ item, cacheInvalidatedOn: redisPeers });
   } catch (err) {
     console.error(err);
     res.status(503).json({ error: "database unavailable" });

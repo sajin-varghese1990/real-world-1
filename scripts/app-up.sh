@@ -21,6 +21,11 @@ kubectl apply -f "${DB_DIR}"
 kubectl rollout status statefulset/postgres -n "${DB_NAMESPACE}" --timeout=180s
 kubectl wait --for=condition=ready pod -l app=postgres -n "${DB_NAMESPACE}" --timeout=180s
 
+echo "Applying Redis cache (headless Service) in ${CACHE_NAMESPACE}"
+kubectl apply -f "${CACHE_DIR}"
+kubectl rollout status statefulset/redis -n "${CACHE_NAMESPACE}" --timeout=180s
+kubectl wait --for=condition=ready pod -l app=redis -n "${CACHE_NAMESPACE}" --timeout=180s
+
 echo "Building ${IMAGE} and ${ADMIN_IMAGE}"
 docker build -t "${IMAGE}" "${FRONTEND_DIR}"
 docker build -t "${ADMIN_IMAGE}" "${ADMIN_DIR}"
@@ -37,6 +42,7 @@ kubectl rollout status deployment/frontend -n "${NAMESPACE}" --timeout=120s
 kubectl rollout status deployment/admin -n "${NAMESPACE}" --timeout=120s
 kubectl get pods,svc,ingress -n "${NAMESPACE}" -o wide
 kubectl get pods,svc,sts,pvc -n "${DB_NAMESPACE}" -o wide
+kubectl get pods,svc,sts -n "${CACHE_NAMESPACE}" -o wide
 
 echo
 echo "Two-tier shop is up (keep tunnel running):"

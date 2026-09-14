@@ -117,6 +117,24 @@ kubectl exec -n shop deploy/frontend -- wget -qO- http://127.0.0.1:8080/api/item
 
 StatefulSet + PVC: deleting the pod keeps the catalog. `./scripts/app-down.sh` deletes the PVC too so a recreate starts empty.
 
+## Headless Service (Redis cache)
+
+A normal Service has a **ClusterIP**. CoreDNS returns that one IP; kube-proxy picks a pod. You never see individual pod IPs.
+
+A **headless** Service sets `clusterIP: None`. DNS for `redis.shop-cache.svc.cluster.local` returns **one A record per Ready pod**. StatefulSet pods also get stable names: `redis-0.redis.shop-cache.svc.cluster.local`.
+
+Why the shop uses it: Redis replicas are **not** a replicated dataset (no Redis Cluster). A ClusterIP would cache on a random pod and miss on the next request. The apps `dns.resolve4` the headless name, then **GET/SET/DEL on every peer**.
+
+```bash
+kubectl get svc redis -n shop-cache
+# CLUSTER-IP should be None
+kubectl run -n shop-cache dnsutils --rm -it --restart=Never --image=busybox:1.36 -- nslookup redis.shop-cache.svc
+curl -sS http://shop.local/api/items
+# first call source=database; second source=cache; redisPeers should list two IPs
+```
+
+Compare with `nslookup postgres.shop-db.svc` (ClusterIP — one address).
+
 ## Probes
 
 Readiness: kubelet must see `/health` before adding the pod to Endpoints (traffic).
@@ -147,6 +165,7 @@ Same `shop` namespace; do not throw Phase 1 away.
 | 2 | Admin app on `/admin` (same Ingress) | Extra Deployment/Service, path-based Ingress, ClusterIP-only |
 | 2b | Split `/api` into a backend Deployment; frontend calls `http://backend.shop.svc` | In-cluster DNS |
 | 3 | Postgres in `shop-db`; admin writes, shop reads | Cross-namespace DNS, Secret, ConfigMap, StatefulSet, PVC |
+| 4 | Redis cache behind a headless Service | `clusterIP: None`, DNS A records per pod |
 | 4 | ConfigMap; tighten probes; requests/limits | ConfigMap, QoS |
 | 5 | Calico NetworkPolicies: frontend → backend → db only | NetworkPolicy, default-deny |
 | 6 | metrics-server; HPA on frontend | metrics-server, HPA |

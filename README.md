@@ -10,9 +10,10 @@ Kubernetes does not remember your app after `minikube delete` or `kubectl delete
 
 | Persist in git | Recreated at apply time |
 | --- | --- |
-| [`app/frontend/`](app/frontend/) and [`app/admin/`](app/admin/) | Images `shop-frontend:1.1` and `shop-admin:1.1` |
+| [`app/frontend/`](app/frontend/) and [`app/admin/`](app/admin/) | Images `shop-frontend:1.3` and `shop-admin:1.3` |
 | [`k8s/base/`](k8s/base/) | Namespace `shop`, Deployments, Services, Ingress, db ConfigMap/Secret |
 | [`k8s/db/`](k8s/db/) | Namespace `shop-db`, Postgres Secret, StatefulSet, PVC, Service |
+| [`k8s/cache/`](k8s/cache/) | Namespace `shop-cache`, Redis StatefulSet + **headless** Service |
 | [`scripts/`](scripts/) (cluster flags, addon, load, apply) | 3-node Calico cluster + ingress addon |
 
 Not stored in git (you already handle this): `/etc/hosts` → `127.0.0.1 shop.local`. Also not stored: the default ServiceAccount and `kube-root-ca.crt` ConfigMap (the API server recreates those).
