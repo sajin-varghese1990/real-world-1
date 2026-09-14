@@ -131,7 +131,7 @@ kubectl exec -n shop deploy/frontend -- wget -qO- http://127.0.0.1:8080/api/info
 
 ## GitOps with Argo CD
 
-Argo CD manages `k8s/base`, `k8s/db`, and `k8s/cache` via an [app-of-apps](argocd/root-app.yaml): one root `Application` watches [`argocd/apps/`](argocd/apps/) in this repo's `main` branch on GitHub, which in turn defines the three child Applications. Nothing here is a manual `helm install` — the chart is rendered once into [`argocd/install/`](argocd/install/) and applied like every other manifest in this repo (regenerate with the command in [`values.yaml`](argocd/install/values.yaml) after changing config).
+Argo CD manages `k8s/base`, `k8s/db`, and `k8s/cache` via an [app-of-apps](argocd/root-app.yaml): one root `Application` watches [`argocd/apps/`](argocd/apps/) in this repo's `main` branch on GitHub, which in turn defines the three child Applications. Nothing here is a manual `helm install` — the chart is rendered once into [`argocd/install/`](argocd/install/) and applied like every other manifest in this repo (regenerate with the command in [`values.yaml`](argocd/values.yaml) after changing config).
 
 ```bash
 ./scripts/argocd-up.sh

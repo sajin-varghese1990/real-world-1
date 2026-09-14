@@ -1,9 +1,0 @@
-# Values for the argo/argo-cd Helm chart, rendered into manifests.yaml (committed,
-# not installed live) so the whole Argo CD install is reproducible from git alone.
-# Regenerate after editing this file:
-#   helm template argocd argo/argo-cd -n argocd -f argocd/install/values.yaml \
-#     --include-crds > argocd/install/manifests.yaml
-configs:
-  params:
-    # Serve plain HTTP behind `kubectl port-forward`; no public ingress for this lab.
-    server.insecure: true
