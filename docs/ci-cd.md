@@ -49,6 +49,21 @@ commit needing frontend and admin to move together can produce two PRs
 instead of one atomic PR — acceptable here since you're the sole reviewer and
 can just hold off merging one until its counterpart shows up.
 
+**Syncing your local clone after merging:** GitHub's UI merge happens on the
+remote; your local `main` doesn't know about it until you fetch. Since you
+never commit locally in this flow (the PR and its merge both happen on
+GitHub), a plain fast-forward is enough:
+
+```bash
+git fetch origin main -q
+git pull --ff-only origin main -q
+```
+
+`--ff-only` refuses to create a merge commit — it only succeeds because your
+local `main` has no commits of its own to reconcile. If it ever refuses,
+that means local `main` has diverged (uncommitted work, or commits that
+never got pushed) and needs `git status` first, not a forced pull.
+
 ## Inside the workflow (GitHub Actions job graph)
 
 ```mermaid
