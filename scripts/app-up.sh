@@ -17,12 +17,12 @@ minikube -p "${MINIKUBE_PROFILE}" addons enable ingress >/dev/null
 kubectl -n ingress-nginx rollout status deployment/ingress-nginx-controller --timeout=180s
 
 echo "Applying database in ${DB_NAMESPACE}"
-kubectl apply -f "${DB_DIR}"
+# kubectl apply -f "${DB_DIR}"  # now synced by Argo CD (shop-db Application)
 kubectl rollout status statefulset/postgres -n "${DB_NAMESPACE}" --timeout=180s
 kubectl wait --for=condition=ready pod -l app=postgres -n "${DB_NAMESPACE}" --timeout=180s
 
 echo "Applying Redis cache (headless Service) in ${CACHE_NAMESPACE}"
-kubectl apply -f "${CACHE_DIR}"
+# kubectl apply -f "${CACHE_DIR}"  # now synced by Argo CD (shop-cache Application)
 kubectl rollout status statefulset/redis -n "${CACHE_NAMESPACE}" --timeout=180s
 kubectl wait --for=condition=ready pod -l app=redis -n "${CACHE_NAMESPACE}" --timeout=180s
 
@@ -35,7 +35,7 @@ minikube -p "${MINIKUBE_PROFILE}" image load "${IMAGE}"
 minikube -p "${MINIKUBE_PROFILE}" image load "${ADMIN_IMAGE}"
 
 echo "Applying apps in ${NAMESPACE}"
-kubectl apply -f "${K8S_DIR}"
+# kubectl apply -f "${K8S_DIR}"  # now synced by Argo CD (shop-base Application)
 # Same image tags (:1.0) reuse the node cache; restart so new layers run.
 kubectl rollout restart deployment/frontend deployment/admin -n "${NAMESPACE}"
 kubectl rollout status deployment/frontend -n "${NAMESPACE}" --timeout=120s

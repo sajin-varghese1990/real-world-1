@@ -1,0 +1,116 @@
+# Builds whichever app(s) changed, pushes the image(s) to ghcr.io, and opens
+# a PR bumping the corresponding tag(s) in k8s/base/. Merging that PR is what
+# actually deploys, via Argo CD syncing main. See docs/ci-cd.md for the why.
+name: Build and promote app images
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/frontend/**"
+      - "app/admin/**"
+
+# Repo default is read-only; each workflow opts into exactly what it needs.
+permissions:
+  contents: write # push the bump-<sha> branch/commit
+  pull-requests: write # open the promotion PR
+  packages: write # push images to ghcr.io
+
+env:
+  IMAGE_OWNER: ${{ github.repository_owner }}
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      admin: ${{ steps.filter.outputs.admin }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'app/frontend/**'
+            admin:
+              - 'app/admin/**'
+
+  build-frontend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: app/frontend
+          push: true
+          tags: ghcr.io/${{ env.IMAGE_OWNER }}/shop-frontend:${{ github.sha }}
+
+  build-admin:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.admin == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: app/admin
+          push: true
+          tags: ghcr.io/${{ env.IMAGE_OWNER }}/shop-admin:${{ github.sha }}
+
+  # if: always() opts out of the default `if: success()`, which would skip
+  # this job whenever a needed job was skipped (not just when it failed) --
+  # see docs/ci-cd.md. Each patch step below then checks its own build job's
+  # result individually, so whichever succeeded still gets promoted.
+  open-promotion-pr:
+    needs: [build-frontend, build-admin]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch frontend image tag
+        if: needs.build-frontend.result == 'success'
+        run: |
+          sed -i "s|image: ghcr.io/[^[:space:]]*/shop-frontend:.*|image: ghcr.io/${IMAGE_OWNER}/shop-frontend:${GITHUB_SHA}|" k8s/base/01-frontend-deployment.yaml
+
+      - name: Patch admin image tag
+        if: needs.build-admin.result == 'success'
+        run: |
+          sed -i "s|image: ghcr.io/[^[:space:]]*/shop-admin:.*|image: ghcr.io/${IMAGE_OWNER}/shop-admin:${GITHUB_SHA}|" k8s/base/04-admin-deployment.yaml
+
+      - name: Check whether anything was actually patched
+        id: check
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: peter-evans/create-pull-request@v7
+        if: steps.check.outputs.changed == 'true'
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: bump-${{ github.sha }}
+          commit-message: "Bump image tag(s) for ${{ github.sha }}"
+          title: "Deploy: bump image tag(s) for ${{ github.sha }}"
+          body: |
+            Promotes image(s) built from commit ${{ github.sha }}.
+
+            - frontend build: ${{ needs.build-frontend.result }}
+            - admin build: ${{ needs.build-admin.result }}

@@ -146,6 +146,8 @@ kubectl -n argocd port-forward svc/argocd-server 8080:80   # separate terminal, 
 
 Open [http://localhost:8080](http://localhost:8080), log in as `admin`, and watch `shop-base` / `shop-db` / `shop-cache` sync. Since the source of truth is GitHub, a change only takes effect after it's pushed to `main` — edit manifests under `k8s/`, commit, push, and Argo CD reconciles within its poll interval (or click **Refresh** in the UI).
 
+App code changes (not just manifests) go through a build-and-promote pipeline first — see [docs/ci-cd.md](docs/ci-cd.md).
+
 ```bash
 kubectl -n argocd get applications
 ./scripts/argocd-down.sh   # remove Argo CD; shop apps and cluster stay up
