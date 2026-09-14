@@ -1,3 +1,4 @@
+# Trigger the build-and-promote GitHub Actions workflow (docs/ci-cd.md).
 FROM node:20-alpine
 
 WORKDIR /app
