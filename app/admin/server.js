@@ -57,12 +57,17 @@ app.get(`${basePath}/api/items`, async (_req, res) => {
 app.post(`${basePath}/api/items`, async (req, res) => {
   const name = String(req.body.name || "").trim();
   const note = String(req.body.note || "").trim();
+  const icon = String(req.body.icon || "").trim();
   if (!name) {
     res.status(400).json({ error: "name is required" });
     return;
   }
+  if (icon && !/^[a-z-]+$/.test(icon)) {
+    res.status(400).json({ error: "invalid icon key" });
+    return;
+  }
   try {
-    const item = await createItem(name, note);
+    const item = await createItem(name, note, icon);
     const redisPeers = await invalidateItemsCache();
     res.status(201).json({ item, cacheInvalidatedOn: redisPeers });
   } catch (err) {

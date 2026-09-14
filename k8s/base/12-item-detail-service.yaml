@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: item-detail
+  namespace: shop
+  labels:
+    app: item-detail
+    tier: item-detail
+spec:
+  type: ClusterIP
+  selector:
+    app: item-detail
+    tier: item-detail
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

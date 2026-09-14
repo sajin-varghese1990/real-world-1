@@ -70,14 +70,17 @@
         color: var(--muted);
       }
       input,
+      select,
       button {
         font: inherit;
       }
-      input {
+      input,
+      select {
         width: 100%;
         padding: 0.45rem 0.5rem;
         border: 1px solid #d6e4e2;
         border-radius: 6px;
+        background: #fff;
       }
       button {
         margin-top: 0.9rem;
@@ -110,8 +113,18 @@
         <form id="item-form">
           <label for="name">Name</label>
           <input id="name" name="name" required maxlength="80" />
-          <label for="note">Note</label>
+          <label for="note">Description</label>
           <input id="note" name="note" maxlength="200" />
+          <label for="icon">Icon</label>
+          <select id="icon" name="icon">
+            <option value="">(none)</option>
+            <option value="box">Box</option>
+            <option value="fruit">Fruit</option>
+            <option value="drink">Drink</option>
+            <option value="tool">Tool</option>
+            <option value="book">Book</option>
+            <option value="gift">Gift</option>
+          </select>
           <button type="submit">Save to database</button>
         </form>
         <p id="form-status" class="status"></p>
@@ -163,10 +176,13 @@
           list.innerHTML = data.items
             .map(
               (item) =>
-                "<li><strong>" +
+                "<li><a href=\"/item/" +
+                item.id +
+                "\"><strong>" +
                 item.name +
-                "</strong> — " +
-                (item.note || "no note") +
+                "</strong></a> — " +
+                (item.note || "no description") +
+                (item.icon ? " (icon: " + item.icon + ")" : "") +
                 "</li>"
             )
             .join("");
@@ -183,12 +199,13 @@
         const formStatus = document.getElementById("form-status");
         const name = document.getElementById("name").value.trim();
         const note = document.getElementById("note").value.trim();
+        const icon = document.getElementById("icon").value;
         formStatus.classList.remove("error");
         try {
           const res = await fetch("/admin/api/items", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, note }),
+            body: JSON.stringify({ name, note, icon }),
           });
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || "HTTP " + res.status);

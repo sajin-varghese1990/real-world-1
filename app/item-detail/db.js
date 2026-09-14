@@ -22,19 +22,12 @@ async function ensureSchema() {
   await pool.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS icon TEXT DEFAULT ''`);
 }
 
-async function listItems() {
+async function getItemById(id) {
   const result = await pool.query(
-    "SELECT id, name, note, icon, created_at FROM items ORDER BY id DESC"
+    "SELECT id, name, note, icon, created_at FROM items WHERE id = $1",
+    [id]
   );
-  return result.rows;
+  return result.rows[0] || null;
 }
 
-async function createItem(name, note) {
-  const result = await pool.query(
-    "INSERT INTO items (name, note) VALUES ($1, $2) RETURNING id, name, note, created_at",
-    [name, note || ""]
-  );
-  return result.rows[0];
-}
-
-module.exports = { pool, ensureSchema, listItems, createItem };
+module.exports = { pool, ensureSchema, getItemById };

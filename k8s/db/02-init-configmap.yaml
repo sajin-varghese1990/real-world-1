@@ -12,5 +12,6 @@ data:
       id SERIAL PRIMARY KEY,
       name TEXT NOT NULL,
       note TEXT DEFAULT '',
+      icon TEXT DEFAULT '',
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );

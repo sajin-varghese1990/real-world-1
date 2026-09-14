@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Item detail — Neighborhood Shop</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f3ec;
+        --ink: #1c1917;
+        --muted: #57534e;
+        --card: #fffcf7;
+        --accent: #0f766e;
+        --line: #e7e0d4;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: "Palatino Linotype", Palatino, Georgia, serif;
+        background: var(--bg);
+        color: var(--ink);
+        min-height: 100vh;
+      }
+      header {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 1.5rem 1.5rem 0;
+      }
+      header a {
+        color: var(--accent);
+        text-decoration: none;
+        font-size: 0.95rem;
+      }
+      header a:hover {
+        text-decoration: underline;
+      }
+      main {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 1.5rem 1.5rem 4rem;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 1.5rem 1.6rem;
+        text-align: center;
+      }
+      .card img {
+        max-width: 140px;
+        max-height: 140px;
+        margin: 0 auto 1rem;
+        display: block;
+      }
+      h1 {
+        font-size: 1.8rem;
+        font-weight: 500;
+        margin: 0 0 0.5rem;
+      }
+      p {
+        color: var(--muted);
+        font-size: 1.05rem;
+      }
+      #status.error {
+        color: #b91c1c;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <a href="/">&larr; Back to shop</a>
+    </header>
+    <main>
+      <p id="status">Loading item…</p>
+      <div id="card" class="card" hidden>
+        <img id="icon" hidden />
+        <h1 id="name"></h1>
+        <p id="note"></p>
+      </div>
+    </main>
+    <script>
+      async function loadItem() {
+        const status = document.getElementById("status");
+        const card = document.getElementById("card");
+        const id = window.location.pathname.split("/").filter(Boolean).pop();
+        try {
+          const res = await fetch("/item/api/items/" + id);
+          if (res.status === 404) {
+            status.classList.add("error");
+            status.textContent = "Item not found.";
+            return;
+          }
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const data = await res.json();
+          document.getElementById("name").textContent = data.item.name;
+          document.getElementById("note").textContent =
+            data.item.note || "No description yet.";
+          if (data.item.icon) {
+            const img = document.getElementById("icon");
+            img.onerror = () => {
+              img.hidden = true;
+            };
+            img.alt = data.item.name;
+            img.src = "/item/icons/" + data.item.icon + ".svg";
+            img.hidden = false;
+          }
+          status.hidden = true;
+          card.hidden = false;
+        } catch (err) {
+          status.classList.add("error");
+          status.textContent = "Could not load this item. Try again.";
+        }
+      }
+      loadItem();
+    </script>
+  </body>
+</html>

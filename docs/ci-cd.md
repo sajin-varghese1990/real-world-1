@@ -69,26 +69,28 @@ never got pushed) and needs `git status` first, not a forced pull.
 ```mermaid
 flowchart LR
     subgraph "one workflow run"
-    P[detect-changes] -->|outputs: frontend=true/false, admin=true/false| BF[build-frontend<br/>if frontend changed]
+    P[detect-changes] -->|frontend/admin/item_detail = true or false| BF[build-frontend<br/>if frontend changed]
     P --> BA[build-admin<br/>if admin changed]
-    BF --> PR["open-promotion-pr<br/>needs: build-frontend, build-admin<br/>if: always()"]
+    P --> BI[build-item-detail<br/>if item_detail changed]
+    BF --> PR["open-promotion-pr<br/>needs: build-frontend, build-admin, build-item-detail<br/>if: always()"]
     BA --> PR
+    BI --> PR
     end
 ```
 
-`detect-changes` is one job; `build-frontend` and `build-admin` are separate
-jobs that only run if their app's files changed. `open-promotion-pr` runs with
-`if: always()` — so it still runs even if a build job failed or was skipped —
-then checks each build job's own result and only bumps the tag(s) for the
-ones that actually succeeded. If neither succeeded, it exits without creating
-a branch or PR.
+`detect-changes` is one job; `build-frontend`, `build-admin`, and
+`build-item-detail` are separate jobs that only run if their app's files
+changed. `open-promotion-pr` runs with `if: always()` — so it still runs even
+if a build job failed or was skipped — then checks each build job's own
+result and only bumps the tag(s) for the ones that actually succeeded. If
+none succeeded, it exits without creating a branch or PR.
 
 ## GitHub Actions concepts you'll meet in the workflow file
 
 | Concept | What it means here |
 | --- | --- |
 | **Trigger (`on:`)** | `push` to `main`, filtered with `paths:` to `app/frontend/**` / `app/admin/**` so unrelated changes (docs, k8s manifests, argocd config) never build an image. |
-| **Job** | An independent unit of work that runs on its own fresh runner VM. `detect-changes`, `build-frontend`, `build-admin`, `open-promotion-pr` are four separate jobs in one workflow. |
+| **Job** | An independent unit of work that runs on its own fresh runner VM. `detect-changes`, `build-frontend`, `build-admin`, `build-item-detail`, `open-promotion-pr` are five separate jobs in one workflow. |
 | **`needs:`** | Declares a job depends on another finishing first. `open-promotion-pr` needs the build jobs, so it always runs *after* them, not in parallel. |
 | **Job outputs** | How jobs pass data to each other (jobs don't share memory/filesystem). `detect-changes` outputs `frontend: 'true'/'false'` and `admin: 'true'/'false'`; the build jobs read those via `if: needs.detect-changes.outputs.frontend == 'true'`. |
 | **Skipped vs. failed, and `if: always()`** | A job's default `if: success()` means it's skipped if *any* needed job failed *or was skipped*. Since we want `open-promotion-pr` to run even when a build failed or didn't run at all, it uses `if: always()` to opt out of that default, then reads `needs.build-frontend.result` / `needs.build-admin.result` itself to decide what to include (`'success'` → bump it, anything else → leave it out). |
@@ -99,10 +101,11 @@ a branch or PR.
 
 ## Image naming and tags
 
-Images are pushed to `ghcr.io/sajin-varghese1990/shop-frontend` and
-`ghcr.io/sajin-varghese1990/shop-admin`, tagged with the **app commit SHA**
-that triggered the build (not a version string) — so the tag, the PR, and the
-exact source code are always traceable to each other.
+Images are pushed to `ghcr.io/sajin-varghese1990/shop-frontend`,
+`ghcr.io/sajin-varghese1990/shop-admin`, and
+`ghcr.io/sajin-varghese1990/shop-item-detail`, tagged with the **app commit
+SHA** that triggered the build (not a version string) — so the tag, the PR,
+and the exact source code are always traceable to each other.
 
 ## Local build path still works
 

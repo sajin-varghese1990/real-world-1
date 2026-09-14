@@ -18,6 +18,13 @@ spec:
                 name: admin
                 port:
                   number: 80
+          - path: /item
+            pathType: Prefix
+            backend:
+              service:
+                name: item-detail
+                port:
+                  number: 80
           - path: /
             pathType: Prefix
             backend:

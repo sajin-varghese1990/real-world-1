@@ -68,6 +68,11 @@
         gap: 1rem;
         margin-top: 1.5rem;
       }
+      a.card-link {
+        text-decoration: none;
+        color: inherit;
+        display: block;
+      }
       article {
         background: var(--card);
         border: 1px solid var(--line);
@@ -128,11 +133,13 @@
             .map(function (item) {
               const note = item.note ? item.note : "Available now";
               return (
-                "<article><h2>" +
+                "<a class=\"card-link\" href=\"/item/" +
+                item.id +
+                "\"><article><h2>" +
                 item.name +
                 "</h2><p>" +
                 note +
-                "</p></article>"
+                "</p></article></a>"
               );
             })
             .join("");

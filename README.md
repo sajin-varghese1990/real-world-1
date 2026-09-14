@@ -10,7 +10,7 @@ Kubernetes does not remember your app after `minikube delete` or `kubectl delete
 
 | Persist in git | Recreated at apply time |
 | --- | --- |
-| [`app/frontend/`](app/frontend/) and [`app/admin/`](app/admin/) | Images `shop-frontend:1.3` and `shop-admin:1.3` |
+| [`app/frontend/`](app/frontend/), [`app/admin/`](app/admin/), [`app/item-detail/`](app/item-detail/) | Images built and pushed by [the build-and-promote workflow](.github/workflows/build-and-promote.yml) (see [docs/ci-cd.md](docs/ci-cd.md)) |
 | [`k8s/base/`](k8s/base/) | Namespace `shop`, Deployments, Services, Ingress, db ConfigMap/Secret |
 | [`k8s/db/`](k8s/db/) | Namespace `shop-db`, Postgres Secret, StatefulSet, PVC, Service |
 | [`k8s/cache/`](k8s/cache/) | Namespace `shop-cache`, Redis StatefulSet + **headless** Service |

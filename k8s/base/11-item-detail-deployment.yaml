@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: item-detail
+  namespace: shop
+  labels:
+    app: item-detail
+    tier: item-detail
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: item-detail
+      tier: item-detail
+  template:
+    metadata:
+      labels:
+        app: item-detail
+        tier: item-detail
+    spec:
+      containers:
+        - name: item-detail
+          image: ghcr.io/sajin-varghese1990/shop-item-detail:pending-first-build
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: BASE_PATH
+              value: /item
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          envFrom:
+            - configMapRef:
+                name: db-config
+            - secretRef:
+                name: db-credentials
+          readinessProbe:
+            httpGet:
+              path: /item/health
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /item/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10

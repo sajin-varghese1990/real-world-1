@@ -9,6 +9,7 @@ on:
     paths:
       - "app/frontend/**"
       - "app/admin/**"
+      - "app/item-detail/**"
 
 # Repo default is read-only; each workflow opts into exactly what it needs.
 permissions:
@@ -25,6 +26,7 @@ jobs:
     outputs:
       frontend: ${{ steps.filter.outputs.frontend }}
       admin: ${{ steps.filter.outputs.admin }}
+      item_detail: ${{ steps.filter.outputs.item_detail }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -35,6 +37,8 @@ jobs:
               - 'app/frontend/**'
             admin:
               - 'app/admin/**'
+            item_detail:
+              - 'app/item-detail/**'
 
   build-frontend:
     needs: detect-changes
@@ -79,12 +83,32 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ghcr.io/${{ env.IMAGE_OWNER }}/shop-admin:${{ github.sha }}
 
+  build-item-detail:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.item_detail == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: app/item-detail
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ghcr.io/${{ env.IMAGE_OWNER }}/shop-item-detail:${{ github.sha }}
+
   # if: always() opts out of the default `if: success()`, which would skip
   # this job whenever a needed job was skipped (not just when it failed) --
   # see docs/ci-cd.md. Each patch step below then checks its own build job's
   # result individually, so whichever succeeded still gets promoted.
   open-promotion-pr:
-    needs: [build-frontend, build-admin]
+    needs: [build-frontend, build-admin, build-item-detail]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -99,6 +123,11 @@ jobs:
         if: needs.build-admin.result == 'success'
         run: |
           sed -i "s|image: ghcr.io/[^[:space:]]*/shop-admin:.*|image: ghcr.io/${IMAGE_OWNER}/shop-admin:${GITHUB_SHA}|" k8s/base/04-admin-deployment.yaml
+
+      - name: Patch item-detail image tag
+        if: needs.build-item-detail.result == 'success'
+        run: |
+          sed -i "s|image: ghcr.io/[^[:space:]]*/shop-item-detail:.*|image: ghcr.io/${IMAGE_OWNER}/shop-item-detail:${GITHUB_SHA}|" k8s/base/11-item-detail-deployment.yaml
 
       - name: Check whether anything was actually patched
         id: check
@@ -121,3 +150,4 @@ jobs:
 
             - frontend build: ${{ needs.build-frontend.result }}
             - admin build: ${{ needs.build-admin.result }}
+            - item-detail build: ${{ needs.build-item-detail.result }}
