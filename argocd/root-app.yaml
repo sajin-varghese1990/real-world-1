@@ -1,0 +1,21 @@
+# App-of-apps bootstrap: the only Application applied by hand (via scripts/argocd-up.sh).
+# It watches argocd/apps/ in this same repo and creates/manages the child Applications
+# (shop-base, shop-db, shop-cache) itself, so from here on everything is GitOps-managed.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/sajin-varghese1990/real-world-1.git
+    targetRevision: main
+    path: argocd/apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

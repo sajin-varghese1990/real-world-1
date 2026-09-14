@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: shop-cache
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/sajin-varghese1990/real-world-1.git
+    targetRevision: main
+    path: k8s/cache
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: shop-cache
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

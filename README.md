@@ -14,6 +14,8 @@ Kubernetes does not remember your app after `minikube delete` or `kubectl delete
 | [`k8s/base/`](k8s/base/) | Namespace `shop`, Deployments, Services, Ingress, db ConfigMap/Secret |
 | [`k8s/db/`](k8s/db/) | Namespace `shop-db`, Postgres Secret, StatefulSet, PVC, Service |
 | [`k8s/cache/`](k8s/cache/) | Namespace `shop-cache`, Redis StatefulSet + **headless** Service |
+| [`argocd/install/`](argocd/install/) | Namespace `argocd`, Argo CD itself (rendered from the Helm chart, applied with plain `kubectl apply`) |
+| [`argocd/apps/`](argocd/apps/) + [`argocd/root-app.yaml`](argocd/root-app.yaml) | Argo CD `Application` objects (app-of-apps) that sync `k8s/base`, `k8s/db`, `k8s/cache` from this repo's `main` branch |
 | [`scripts/`](scripts/) (cluster flags, addon, load, apply) | 3-node Calico cluster + ingress addon |
 
 Not stored in git (you already handle this): `/etc/hosts` → `127.0.0.1 shop.local`. Also not stored: the default ServiceAccount and `kube-root-ca.crt` ConfigMap (the API server recreates those).
@@ -125,6 +127,28 @@ kubectl get deploy,svc,ingress -n shop
 kubectl describe ingress frontend -n shop
 kubectl logs -n shop -l app=frontend --tail=50
 kubectl exec -n shop deploy/frontend -- wget -qO- http://127.0.0.1:8080/api/info
+```
+
+## GitOps with Argo CD
+
+Argo CD manages `k8s/base`, `k8s/db`, and `k8s/cache` via an [app-of-apps](argocd/root-app.yaml): one root `Application` watches [`argocd/apps/`](argocd/apps/) in this repo's `main` branch on GitHub, which in turn defines the three child Applications. Nothing here is a manual `helm install` — the chart is rendered once into [`argocd/install/`](argocd/install/) and applied like every other manifest in this repo (regenerate with the command in [`values.yaml`](argocd/install/values.yaml) after changing config).
+
+```bash
+./scripts/argocd-up.sh
+```
+
+Then get the initial admin password and open the UI:
+
+```bash
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d; echo
+kubectl -n argocd port-forward svc/argocd-server 8080:80   # separate terminal, leave open
+```
+
+Open [http://localhost:8080](http://localhost:8080), log in as `admin`, and watch `shop-base` / `shop-db` / `shop-cache` sync. Since the source of truth is GitHub, a change only takes effect after it's pushed to `main` — edit manifests under `k8s/`, commit, push, and Argo CD reconciles within its poll interval (or click **Refresh** in the UI).
+
+```bash
+kubectl -n argocd get applications
+./scripts/argocd-down.sh   # remove Argo CD; shop apps and cluster stay up
 ```
 
 ## Tear down
