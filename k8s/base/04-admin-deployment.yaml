@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: admin
-          image: ghcr.io/sajin-varghese1990/shop-admin:pending-first-build
+          image: ghcr.io/sajin-varghese1990/shop-admin:bac25873950825dbec6338f1288ab67985ceb2b4
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
