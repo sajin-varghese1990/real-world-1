@@ -8,10 +8,6 @@ metadata:
   namespace: shop
   labels:
     app.kubernetes.io/part-of: shop
-  annotations:
-    # Must land after 03-ingress.yaml's /item path removal, or nginx's
-    # admission webhook rejects this for claiming an already-defined path.
-    argocd.argoproj.io/sync-wave: "1"
 spec:
   ingressClassName: nginx
   rules:
