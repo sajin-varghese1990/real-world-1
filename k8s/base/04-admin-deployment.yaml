@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: admin
-          image: ghcr.io/sajin-varghese1990/shop-admin:f558948fd521544dd17008f62de71b3d3ae1ad1b
+          image: ghcr.io/sajin-varghese1990/shop-admin:9cc0dfacac5f872a62c58317efe3035ba6c38070
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
