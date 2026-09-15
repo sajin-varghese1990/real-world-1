@@ -127,7 +127,7 @@ jobs:
       - name: Patch item-detail image tag
         if: needs.build-item-detail.result == 'success'
         run: |
-          sed -i "s|image: ghcr.io/[^[:space:]]*/shop-item-detail:.*|image: ghcr.io/${IMAGE_OWNER}/shop-item-detail:${GITHUB_SHA}|" k8s/base/11-item-detail-deployment.yaml
+          sed -i "s|image: ghcr.io/[^[:space:]]*/shop-item-detail:.*|image: ghcr.io/${IMAGE_OWNER}/shop-item-detail:${GITHUB_SHA}|" k8s/base/11-item-detail-rollout.yaml
 
       - name: Check whether anything was actually patched
         id: check

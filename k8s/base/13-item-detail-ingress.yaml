@@ -1,0 +1,27 @@
+# Split out from the frontend/admin Ingress so Argo Rollouts' nginx
+# traffic-routing (which clones this Ingress into a weighted canary copy)
+# only ever affects item-detail traffic, never /admin or /.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: item-detail
+  namespace: shop
+  labels:
+    app.kubernetes.io/part-of: shop
+  annotations:
+    # Must land after 03-ingress.yaml's /item path removal, or nginx's
+    # admission webhook rejects this for claiming an already-defined path.
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: shop.local
+      http:
+        paths:
+          - path: /item
+            pathType: Prefix
+            backend:
+              service:
+                name: item-detail
+                port:
+                  number: 80

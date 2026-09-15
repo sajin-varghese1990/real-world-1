@@ -1,5 +1,8 @@
-apiVersion: apps/v1
-kind: Deployment
+# Argo Rollouts CRD instead of a plain Deployment -- only item-detail uses
+# this; frontend and admin stay as ordinary Deployments. See docs/ci-cd.md
+# and the Argo Rollouts section of README.md for why.
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: item-detail
   namespace: shop
@@ -12,6 +15,19 @@ spec:
     matchLabels:
       app: item-detail
       tier: item-detail
+  strategy:
+    canary:
+      stableService: item-detail
+      canaryService: item-detail-canary
+      trafficRouting:
+        nginx:
+          stableIngress: item-detail
+      steps:
+        - setWeight: 20
+        - pause: { duration: 2m }
+        - setWeight: 50
+        - pause: { duration: 2m }
+        - setWeight: 100
   template:
     metadata:
       labels:

@@ -1,0 +1,10 @@
+# Values for the argo/argo-rollouts Helm chart, rendered into argo-rollouts/install/
+# (committed, not installed live) so the whole install is reproducible from git alone.
+# Kept outside argo-rollouts/install/ since that directory is applied wholesale with
+# `kubectl apply -f` and this file is not a Kubernetes manifest.
+# Regenerate after editing this file:
+#   helm template argo-rollouts argo/argo-rollouts -n argo-rollouts -f argo-rollouts/values.yaml \
+#     --include-crds > argo-rollouts/install/01-argo-rollouts-chart.yaml
+#
+# dashboard.enabled stays false (default): `kubectl argo rollouts dashboard` runs a
+# local server against your kubeconfig, no in-cluster dashboard deployment needed.
