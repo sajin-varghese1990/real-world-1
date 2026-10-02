@@ -1,0 +1,10 @@
+# Step 1 of the self-signed-CA pattern: a bootstrap Issuer with no real CA of
+# its own, used only once to sign our own root CA certificate below. Nothing
+# ever requests certs from this one directly.
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: selfsigned-bootstrap
+  namespace: cert-manager
+spec:
+  selfSigned: {}

@@ -1,0 +1,22 @@
+# Step 2: ask the bootstrap Issuer for one CA certificate (isCA: true), stored
+# in shop-local-ca-tls. This is the ONE certificate you (or anyone) needs to
+# manually trust (e.g. import into your OS/browser keychain) -- every leaf
+# cert the ClusterIssuer below issues afterwards inherits that trust, so you
+# only do the manual trust step once, not per-certificate.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: shop-local-ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: shop-local-ca
+  secretName: shop-local-ca-tls
+  duration: 8760h # 1 year
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: selfsigned-bootstrap
+    kind: Issuer
+    group: cert-manager.io

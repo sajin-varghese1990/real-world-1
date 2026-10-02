@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-from-shop
+  namespace: shop-cache
+spec:
+  podSelector:
+    matchLabels:
+      app: redis
+      tier: cache
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: shop
+          podSelector:
+            matchLabels:
+              app: admin
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: shop
+          podSelector:
+            matchLabels:
+              app: frontend
+      ports:
+        - port: 6379
+          protocol: TCP

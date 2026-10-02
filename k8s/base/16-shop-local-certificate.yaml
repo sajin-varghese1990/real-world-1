@@ -1,0 +1,13 @@
+kind: Certificate
+apiVersion: cert-manager.io/v1
+metadata:
+  name: shop-local-certificate
+  namespace: shop
+spec:
+  secretName: shop-local-tls-certificate
+  issuerRef:
+    name: shop-local-ca-issuer
+    kind: ClusterIssuer
+  commonName: shop.local
+  dnsNames:
+    - shop.local

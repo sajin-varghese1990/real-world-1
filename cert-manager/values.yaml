@@ -1,0 +1,8 @@
+# Values for the jetstack/cert-manager Helm chart, rendered into
+# cert-manager/install/01-cert-manager-chart.yaml (committed, not installed
+# live) -- same pattern as argocd/values.yaml and argo-rollouts/values.yaml.
+# Regenerate after editing this file:
+#   helm template cert-manager jetstack/cert-manager -n cert-manager -f cert-manager/values.yaml \
+#     --include-crds > cert-manager/install/01-cert-manager-chart.yaml
+crds:
+  enabled: true

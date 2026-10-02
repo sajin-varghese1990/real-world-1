@@ -1,0 +1,11 @@
+# Step 3: the "real" issuer apps actually request certs from. Cluster-scoped
+# (no namespace) so any namespace's Certificate can reference it. Reads the CA
+# from shop-local-ca-tls in cert-manager's own namespace -- cert-manager's
+# default clusterResourceNamespace, no extra config needed.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: shop-local-ca-issuer
+spec:
+  ca:
+    secretName: shop-local-ca-tls
