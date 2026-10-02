@@ -27,6 +27,13 @@ spec:
         - name: frontend
           image: ghcr.io/sajin-varghese1990/shop-frontend:f558948fd521544dd17008f62de71b3d3ae1ad1b
           imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
           ports:
             - name: http
               containerPort: 8080

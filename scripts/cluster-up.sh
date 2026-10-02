@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Recreate the 3-node Calico minikube cluster (profile localk8s) and enable Ingress.
+# Recreate the 3-node Calico minikube cluster (profile localk8s) and enable
+# Ingress + metrics-server.
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=env.sh
@@ -19,6 +20,10 @@ kubectl get nodes -o wide
 echo "Enabling ingress addon"
 minikube -p "${MINIKUBE_PROFILE}" addons enable ingress
 kubectl -n ingress-nginx rollout status deployment/ingress-nginx-controller --timeout=180s
+
+echo "Enabling metrics-server addon"
+minikube -p "${MINIKUBE_PROFILE}" addons enable metrics-server
+kubectl -n kube-system rollout status deployment/metrics-server --timeout=180s
 
 echo "Cluster is ready. Next: ./scripts/app-up.sh"
 echo "Then keep this running in another terminal: minikube -p ${MINIKUBE_PROFILE} tunnel"

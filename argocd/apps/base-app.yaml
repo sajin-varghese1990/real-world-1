@@ -12,6 +12,16 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: shop
+  # HPA owns frontend's replica count at runtime; without this, selfHeal
+  # would fight the autoscaler and revert it back to whatever's in git,
+  # the same way it reverted our earlier direct kubectl apply.
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      name: frontend
+      namespace: shop
+      jsonPointers:
+        - /spec/replicas
   syncPolicy:
     automated:
       prune: true
