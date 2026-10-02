@@ -102,8 +102,9 @@ none succeeded, it exits without creating a branch or PR.
 ## Image naming and tags
 
 Images are pushed to `ghcr.io/sajin-varghese1990/shop-frontend`,
-`ghcr.io/sajin-varghese1990/shop-admin`, and
-`ghcr.io/sajin-varghese1990/shop-item-detail`, tagged with the **app commit
+`ghcr.io/sajin-varghese1990/shop-admin`,
+`ghcr.io/sajin-varghese1990/shop-item-detail`, and
+`ghcr.io/sajin-varghese1990/shop-mcp-catalog`, tagged with the **app commit
 SHA** that triggered the build (not a version string) — so the tag, the PR,
 and the exact source code are always traceable to each other.
 

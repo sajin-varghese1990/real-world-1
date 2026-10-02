@@ -10,6 +10,7 @@ on:
       - "app/frontend/**"
       - "app/admin/**"
       - "app/item-detail/**"
+      - "app/mcp-catalog/**"
 
 # Repo default is read-only; each workflow opts into exactly what it needs.
 permissions:
@@ -27,6 +28,7 @@ jobs:
       frontend: ${{ steps.filter.outputs.frontend }}
       admin: ${{ steps.filter.outputs.admin }}
       item_detail: ${{ steps.filter.outputs.item_detail }}
+      mcp_catalog: ${{ steps.filter.outputs.mcp_catalog }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -39,6 +41,8 @@ jobs:
               - 'app/admin/**'
             item_detail:
               - 'app/item-detail/**'
+            mcp_catalog:
+              - 'app/mcp-catalog/**'
 
   build-frontend:
     needs: detect-changes
@@ -103,12 +107,32 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ghcr.io/${{ env.IMAGE_OWNER }}/shop-item-detail:${{ github.sha }}
 
+  build-mcp-catalog:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.mcp_catalog == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: app/mcp-catalog
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ghcr.io/${{ env.IMAGE_OWNER }}/shop-mcp-catalog:${{ github.sha }}
+
   # if: always() opts out of the default `if: success()`, which would skip
   # this job whenever a needed job was skipped (not just when it failed) --
   # see docs/ci-cd.md. Each patch step below then checks its own build job's
   # result individually, so whichever succeeded still gets promoted.
   open-promotion-pr:
-    needs: [build-frontend, build-admin, build-item-detail]
+    needs: [build-frontend, build-admin, build-item-detail, build-mcp-catalog]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -128,6 +152,11 @@ jobs:
         if: needs.build-item-detail.result == 'success'
         run: |
           sed -i "s|image: ghcr.io/[^[:space:]]*/shop-item-detail:.*|image: ghcr.io/${IMAGE_OWNER}/shop-item-detail:${GITHUB_SHA}|" k8s/base/11-item-detail-rollout.yaml
+
+      - name: Patch mcp-catalog image tag
+        if: needs.build-mcp-catalog.result == 'success'
+        run: |
+          sed -i "s|image: ghcr.io/[^[:space:]]*/shop-mcp-catalog:.*|image: ghcr.io/${IMAGE_OWNER}/shop-mcp-catalog:${GITHUB_SHA}|" k8s/base/18-mcp-catalog-deployment.yaml
 
       - name: Check whether anything was actually patched
         id: check
@@ -151,3 +180,4 @@ jobs:
             - frontend build: ${{ needs.build-frontend.result }}
             - admin build: ${{ needs.build-admin.result }}
             - item-detail build: ${{ needs.build-item-detail.result }}
+            - mcp-catalog build: ${{ needs.build-mcp-catalog.result }}

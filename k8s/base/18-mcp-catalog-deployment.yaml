@@ -1,0 +1,53 @@
+# Plain Deployment (no Rollout, no HPA) -- a single replica is deliberate:
+# this is a low-traffic, occasionally-used tool, and MCP's Streamable HTTP
+# sessions aren't shared across replicas, so one pod sidesteps that entirely
+# rather than needing sessionAffinity on the Service.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-catalog
+  namespace: shop
+  labels:
+    app: mcp-catalog
+    tier: mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mcp-catalog
+      tier: mcp
+  template:
+    metadata:
+      labels:
+        app: mcp-catalog
+        tier: mcp
+    spec:
+      containers:
+        - name: mcp-catalog
+          image: ghcr.io/sajin-varghese1990/shop-mcp-catalog:pending-first-build
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: BASE_PATH
+              value: /mcp
+          envFrom:
+            - configMapRef:
+                name: db-config
+            - secretRef:
+                name: db-credentials
+          readinessProbe:
+            httpGet:
+              path: /mcp/health
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /mcp/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
