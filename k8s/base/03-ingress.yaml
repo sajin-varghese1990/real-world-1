@@ -7,6 +7,10 @@ metadata:
     app.kubernetes.io/part-of: shop
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+        - shop.local
+      secretName: shop-local-tls-certificate
   rules:
     - host: shop.local
       http:
