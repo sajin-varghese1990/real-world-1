@@ -156,6 +156,46 @@ minikube -p localk8s image ls | grep shop-frontend
 minikube -p localk8s image load shop-frontend:1.0
 ```
 
+## NetworkPolicies (Calico)
+
+A `NetworkPolicy` only restricts a direction (`Ingress`/`Egress`) for the pods its `podSelector` matches — the moment any policy selects a pod for that direction, it flips from allow-all to deny-except-explicit, for that pod only, that direction only. Pods nothing selects stay fully open.
+
+Three policies, one per namespace:
+
+- `k8s/db/05-networkpolicy.yaml` — only pods in `shop` may reach Postgres on 5432.
+- `k8s/cache/03-networkpolicy.yaml` — only `frontend`/`admin` pods specifically (not `item-detail`, which never touches Redis) may reach 6379. A `namespaceSelector` and `podSelector` in the **same** `from` entry are ANDed together; two separate `from` entries are ORed.
+- `k8s/base/15-networkpolicy.yaml` — pods in `shop` only accept ingress from the `ingress-nginx` controller pod, on port **8080** (the container port — NetworkPolicy matches the port traffic actually lands on at the pod, not the Service's port 80).
+
+Namespace matching uses the automatic `kubernetes.io/metadata.name` label every namespace already has — no manual labeling needed.
+
+```bash
+kubectl -n shop exec deploy/frontend -- nc -zv -w3 postgres.shop-db.svc.cluster.local 5432
+kubectl -n shop exec deploy/admin -- nc -zv -w3 redis.shop-cache.svc.cluster.local 6379
+# item-detail should time out against redis -- it's intentionally not in the allow list
+kubectl -n shop get pod -l app=item-detail -o jsonpath='{.items[0].metadata.name}' | xargs -I{} kubectl -n shop exec {} -- nc -zv -w3 redis.shop-cache.svc.cluster.local 6379
+```
+
+A denied connection **times out**, it doesn't refuse — Calico drops the packets silently. That's a different failure signature than a real service being down (which usually refuses the connection immediately), worth recognizing on sight.
+
+## TLS via cert-manager
+
+cert-manager's three core CRDs form a deliberate chain, not three independent things:
+
+- `Issuer`/`ClusterIssuer` — a certificate authority cert-manager can request certs from. `Issuer` is namespaced; `ClusterIssuer` can be referenced from any namespace.
+- `Certificate` — a *request* ("mint me a cert, store it in this Secret"), not the cert itself.
+
+This repo mints its own private root CA rather than using a bare self-signed cert per host: `cert-manager/pki/00-bootstrap-issuer.yaml` (a throwaway `selfSigned` `Issuer`, used exactly once) → `01-ca-certificate.yaml` (`isCA: true`, requests our actual CA keypair) → `02-ca-clusterissuer.yaml` (`kind: ca`, the issuer apps actually use). Payoff: trust the one CA cert once (OS/browser keychain), and every cert it signs afterward — `shop.local` today, anything else later — is automatically trusted too.
+
+TLS terminates at the **ingress-nginx controller pod**, not at the app pods — it decrypts HTTPS there and forwards plain HTTP to the Service, same as before. The `allow-ingress-from-nginx` NetworkPolicy (port 8080) is completely unaffected, since that hop was always plain HTTP.
+
+The CA's private key is **not** committed to git — it only exists as the live `shop-local-ca-tls` Secret. It survives `minikube stop`/`start` (disk persists), but not `minikube delete` (a fresh CA gets generated, and the old browser trust becomes stale).
+
+```bash
+kubectl get certificate -A
+kubectl -n shop get secret shop-local-tls-certificate
+echo | openssl s_client -connect 127.0.0.1:443 -servername shop.local 2>/dev/null | openssl x509 -noout -issuer -subject
+```
+
 ## Roadmap (later sessions)
 
 Same `shop` namespace; do not throw Phase 1 away.
@@ -173,3 +213,4 @@ Same `shop` namespace; do not throw Phase 1 away.
 | 8 | Nightly report CronJob | Jobs / CronJobs |
 | 9 | Rolling update and rollback of `shop-frontend` | rollout, revision history |
 | 10 | podAntiAffinity / topology spread across 3 nodes | scheduling, optional taints |
+| 11 | TLS via cert-manager (self-signed root CA) | Issuer/ClusterIssuer/Certificate, Ingress `tls:`, edge termination |

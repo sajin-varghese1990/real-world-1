@@ -11,9 +11,10 @@ Kubernetes does not remember your app after `minikube delete` or `kubectl delete
 | Persist in git | Recreated at apply time |
 | --- | --- |
 | [`app/frontend/`](app/frontend/), [`app/admin/`](app/admin/), [`app/item-detail/`](app/item-detail/) | Images built and pushed by [the build-and-promote workflow](.github/workflows/build-and-promote.yml) (see [docs/ci-cd.md](docs/ci-cd.md)) |
-| [`k8s/base/`](k8s/base/) | Namespace `shop`, Deployments, Services, Ingress, db ConfigMap/Secret |
-| [`k8s/db/`](k8s/db/) | Namespace `shop-db`, Postgres Secret, StatefulSet, PVC, Service |
-| [`k8s/cache/`](k8s/cache/) | Namespace `shop-cache`, Redis StatefulSet + **headless** Service |
+| [`k8s/base/`](k8s/base/) | Namespace `shop`, Deployments/Rollout, Services, Ingress (with TLS), db ConfigMap/Secret, NetworkPolicy, `Certificate` |
+| [`k8s/db/`](k8s/db/) | Namespace `shop-db`, Postgres Secret, StatefulSet, PVC, Service, NetworkPolicy |
+| [`k8s/cache/`](k8s/cache/) | Namespace `shop-cache`, Redis StatefulSet + **headless** Service, NetworkPolicy |
+| [`cert-manager/install/`](cert-manager/install/) + [`cert-manager/pki/`](cert-manager/pki/) | Namespace `cert-manager`, cert-manager itself (rendered from the Helm chart), and the self-signed root CA (`Issuer` → CA `Certificate` → `ClusterIssuer`) — see [docs/lessons.md](docs/lessons.md#tls-via-cert-manager) |
 | [`argocd/install/`](argocd/install/) | Namespace `argocd`, Argo CD itself (rendered from the Helm chart, applied with plain `kubectl apply`) |
 | [`argocd/apps/`](argocd/apps/) + [`argocd/root-app.yaml`](argocd/root-app.yaml) | Argo CD `Application` objects (app-of-apps) that sync `k8s/base`, `k8s/db`, `k8s/cache` from this repo's `main` branch |
 | [`scripts/`](scripts/) (cluster flags, addon, load, apply) | 3-node Calico cluster + ingress addon |
