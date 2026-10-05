@@ -3,6 +3,7 @@ import { createMcpHandler, McpServer } from "@modelcontextprotocol/server";
 import { toNodeHandler } from "@modelcontextprotocol/node";
 import * as z from "zod/v4";
 import { ensureSchema, listItems, getItemById } from "./db.js";
+import { getPodStatus } from "./k8s.js";
 
 const port = Number(process.env.PORT) || 8080;
 const basePath = process.env.BASE_PATH || "/mcp";
@@ -44,6 +45,32 @@ function createServer() {
         return { content: [{ type: "text", text: `No item with id ${id}.` }], isError: true };
       }
       return { content: [{ type: "text", text: formatItem(item) }] };
+    }
+  );
+
+  server.registerTool(
+    "get_pod_status",
+    {
+      title: "Get shop namespace pod status",
+      description: "List pods in the shop namespace with phase, readiness, and restart count.",
+      inputSchema: z.object({}),
+    },
+    async () => {
+      try {
+        const pods = await getPodStatus();
+        if (!pods.length) {
+          return { content: [{ type: "text", text: "No pods found." }] };
+        }
+        const text = pods
+          .map((p) => `${p.name}: ${p.phase}, ready=${p.ready}, restarts=${p.restarts}`)
+          .join("\n");
+        return { content: [{ type: "text", text }] };
+      } catch (err) {
+        return {
+          content: [{ type: "text", text: `Could not read pod status: ${err.message}` }],
+          isError: true,
+        };
+      }
     }
   );
 

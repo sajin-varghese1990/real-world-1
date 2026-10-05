@@ -3,15 +3,16 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Read-only MCP server exposing the shop catalog (list_items, get_item) over Streamable HTTP, served under /mcp on the same Ingress",
+  "description": "Read-only MCP server exposing the shop catalog (list_items, get_item) and shop namespace pod status (get_pod_status) over Streamable HTTP, served under /mcp on the same Ingress",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "dependencies": {
+    "@kubernetes/client-node": "^2.0.0",
     "@modelcontextprotocol/server": "^2.2.0",
     "@modelcontextprotocol/node": "^2.1.0",
     "express": "^4.21.2",
