@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: ghcr.io/sajin-varghese1990/shop-frontend:f558948fd521544dd17008f62de71b3d3ae1ad1b
+          image: ghcr.io/sajin-varghese1990/shop-frontend:510803f907ece21e58813767733f331dbe3c3db6
           imagePullPolicy: IfNotPresent
           resources:
             requests:
