@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
         - name: mcp-catalog
-          image: ghcr.io/sajin-varghese1990/shop-mcp-catalog:272250619defd8eda476196389390efaa9772cad
+          image: ghcr.io/sajin-varghese1990/shop-mcp-catalog:4fb47a53ffd4a978de3e97a5c49ca4a5f5aa5d70
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
