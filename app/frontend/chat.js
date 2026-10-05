@@ -29,12 +29,16 @@ async function answer(question) {
     return callMcpTool("list_items", {});
   }
 
+  if (/\b(pod|pods|status|health|running)\b/i.test(text)) {
+    return callMcpTool("get_pod_status", {});
+  }
+
   const idMatch = text.match(/#?\s*(\d+)/);
   if (idMatch && /\b(item|id|detail|describe|tell)\b/i.test(text)) {
     return callMcpTool("get_item", { id: Number(idMatch[1]) });
   }
 
-  return 'Try asking "list all items" or "tell me about item 3".';
+  return 'Try asking "list all items", "tell me about item 3", or "pod status".';
 }
 
 module.exports = { answer };
