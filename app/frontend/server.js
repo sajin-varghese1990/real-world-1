@@ -3,10 +3,12 @@ const os = require("os");
 const path = require("path");
 const { ensureSchema, listItems } = require("./db");
 const { getCachedItems, setCachedItems, peerIps } = require("./cache");
+const chat = require("./chat");
 
 const app = express();
 const port = Number(process.env.PORT) || 8080;
 
+app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/health", (_req, res) => {
@@ -41,6 +43,16 @@ app.get("/api/items", async (_req, res) => {
   } catch (err) {
     console.error(err);
     res.status(503).json({ error: "database unavailable" });
+  }
+});
+
+app.post("/api/chat", async (req, res) => {
+  try {
+    const reply = await chat.answer(req.body.question);
+    res.json({ reply });
+  } catch (err) {
+    console.error(err);
+    res.status(503).json({ reply: "Sorry, the catalog assistant is unavailable right now." });
   }
 });
 

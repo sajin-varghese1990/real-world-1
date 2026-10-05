@@ -96,6 +96,88 @@
         color: var(--muted);
         text-align: center;
       }
+      #chat-toggle {
+        position: fixed;
+        bottom: 1.5rem;
+        right: 1.5rem;
+        width: 3.2rem;
+        height: 3.2rem;
+        border-radius: 50%;
+        border: 0;
+        background: var(--accent);
+        color: #fff;
+        font-size: 1.4rem;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+      }
+      #chat-panel {
+        position: fixed;
+        bottom: 5.2rem;
+        right: 1.5rem;
+        width: 300px;
+        max-height: 420px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        font-family: system-ui, sans-serif;
+      }
+      #chat-panel.hidden {
+        display: none;
+      }
+      #chat-header {
+        padding: 0.7rem 0.9rem;
+        background: var(--accent);
+        color: #fff;
+        font-size: 0.9rem;
+        font-weight: 600;
+      }
+      #chat-log {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0.7rem 0.9rem;
+        font-size: 0.85rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      #chat-log .bubble {
+        white-space: pre-wrap;
+        padding: 0.45rem 0.6rem;
+        border-radius: 8px;
+        max-width: 90%;
+      }
+      #chat-log .user {
+        align-self: flex-end;
+        background: var(--accent);
+        color: #fff;
+      }
+      #chat-log .bot {
+        align-self: flex-start;
+        background: var(--bg);
+        border: 1px solid var(--line);
+      }
+      #chat-form {
+        display: flex;
+        border-top: 1px solid var(--line);
+      }
+      #chat-input {
+        flex: 1;
+        border: 0;
+        padding: 0.6rem 0.7rem;
+        font: inherit;
+        font-size: 0.85rem;
+      }
+      #chat-form button {
+        border: 0;
+        background: var(--accent);
+        color: #fff;
+        padding: 0 0.9rem;
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>
@@ -114,6 +196,19 @@
         Nothing on the shelf yet. Check back shortly.
       </p>
     </main>
+    <button id="chat-toggle" title="Ask about the catalog">💬</button>
+    <div id="chat-panel" class="hidden">
+      <div id="chat-header">Catalog assistant</div>
+      <div id="chat-log">
+        <div class="bubble bot">
+          Try "list all items" or "tell me about item 3".
+        </div>
+      </div>
+      <form id="chat-form">
+        <input id="chat-input" placeholder="Ask about the catalog…" autocomplete="off" />
+        <button type="submit">Send</button>
+      </form>
+    </div>
     <script>
       async function loadCatalog() {
         const status = document.getElementById("catalog-status");
@@ -153,6 +248,39 @@
         }
       }
       loadCatalog();
+
+      function addBubble(text, who) {
+        const log = document.getElementById("chat-log");
+        const bubble = document.createElement("div");
+        bubble.className = "bubble " + who;
+        bubble.textContent = text;
+        log.appendChild(bubble);
+        log.scrollTop = log.scrollHeight;
+      }
+
+      document.getElementById("chat-toggle").addEventListener("click", function () {
+        document.getElementById("chat-panel").classList.toggle("hidden");
+      });
+
+      document.getElementById("chat-form").addEventListener("submit", async function (event) {
+        event.preventDefault();
+        const input = document.getElementById("chat-input");
+        const question = input.value.trim();
+        if (!question) return;
+        addBubble(question, "user");
+        input.value = "";
+        try {
+          const res = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question }),
+          });
+          const data = await res.json();
+          addBubble(data.reply, "bot");
+        } catch (err) {
+          addBubble("Sorry, something went wrong.", "bot");
+        }
+      });
     </script>
   </body>
 </html>

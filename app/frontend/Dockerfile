@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package.json ./
 RUN npm install --omit=dev
 
-COPY server.js db.js cache.js ./
+COPY server.js db.js cache.js chat.js ./
 COPY public ./public
 
 ENV PORT=8080

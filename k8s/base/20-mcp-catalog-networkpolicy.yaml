@@ -1,0 +1,27 @@
+# Additive to 15-networkpolicy.yaml, not a replacement -- multiple
+# NetworkPolicy objects selecting the same pod are OR'd together. The
+# existing ingress-nginx-only rule still applies (keeps external MCP clients
+# like Cursor working); this adds a second allowed source so frontend's
+# catalog-chat popup can call mcp-catalog directly, pod-to-pod, without
+# loosening the broad namespace-wide policy for every other pod.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-mcp-catalog-from-frontend
+  namespace: shop
+spec:
+  podSelector:
+    matchLabels:
+      app: mcp-catalog
+      tier: mcp
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: frontend
+              tier: web
+      ports:
+        - port: 8080
+          protocol: TCP
